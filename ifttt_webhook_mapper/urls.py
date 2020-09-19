@@ -16,6 +16,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from webhook_mapper.views import make_post_request_to_webhook
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("m/<str:tag>/", make_post_request_to_webhook),
 ]
