@@ -1,17 +1,43 @@
 import requests
+from urllib.parse import urlencode
 
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
 
 from .models import GetToPostRequestMapping
 
-def make_post_request_to_webhook(request, tag):
-    _MAPPER_PARAMS = {
-        "v1": "value1",
-        "v2": "value2",
-        "v3": "value3",
-    }
+_MAPPER_PARAMS = {
+    "v1": "value1",
+    "v2": "value2",
+    "v3": "value3",
+}
 
+def make_post_request_to_webhook(request, tag):
+    try:
+        intent = GetToPostRequestMapping.objects.get(tag=tag)
+    except ObjectDoesNotExist:
+        return render(request, "mapper/error.html", {
+            "code": "tag-dne",
+            "reason": "path-param::tag",
+            "details": f"No mapping found with the tag '{tag}'"
+        })
+
+    params = dict()
+
+    for query_param in _MAPPER_PARAMS.keys():
+        qpval = request.GET.get(query_param, None)
+
+        if qpval is not None:
+            params[query_param] = qpval
+
+    redirect_url = f"/_f/{tag}/?{urlencode(params)}"
+
+    return render(request, "mapper/confirmation.html", {
+        "code": tag,
+        "redirect_url": redirect_url
+    })
+
+def fulfill_webhook_mapping(request, tag):
     try:
         intent = GetToPostRequestMapping.objects.get(tag=tag)
     except ObjectDoesNotExist:
